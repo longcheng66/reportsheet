@@ -11,7 +11,7 @@
       <div class="info-row">
         <div class="info-item">
           <label>生产车间</label>
-<select class="input-field" v-model="productInfo.workshop">
+          <select class="input-field" v-model="productInfo.workshop" :disabled="!isEditable">
             <option value="">请选择车间</option>
             <option value="一部/压铸车间">一部/压铸车间</option>
             <option value="一部/金工车间">一部/金工车间</option>
@@ -25,25 +25,24 @@
             <option value="二部/刮刀车间">二部/刮刀车间</option>
             <option value="二部/包装车间">二部/包装车间</option>
           </select>
-          
-
         </div>
         <div class="info-item">
           <label>班次</label>
-          <input type="text" placeholder="请输入班次" class="input-field" v-model="productInfo.shift" />
+          <input type="text" placeholder="请输入班次" class="input-field" v-model="productInfo.shift" :disabled="!isEditable" />
         </div>
         
         <div class="info-item">
           <label>报工日期</label>
-          <input type="date" placeholder="请选择日期" class="input-field" v-model="productInfo.reportDate" />
+          <input type="date" placeholder="请选择日期" class="input-field" v-model="productInfo.reportDate" :disabled="!isEditable" />
         </div>
         <div class="info-item">
           <label>制表人</label>
-          <input type="text" placeholder="请输入制表人" class="input-field" v-model="productInfo.preparer" />
+          <input type="text" placeholder="请输入制表人" class="input-field" v-model="productInfo.preparer" :disabled="!isEditable" />
         </div>
       </div>
       <div class="info-actions">
-        <button class="btn-confirm" @click="handleProductInfoConfirm">确认</button>
+        <button class="btn-confirm" @click="handleProductInfoConfirm" v-if="isEditable">确认</button>
+        <button class="btn-edit" @click="handleEditProductInfo" v-if="!isEditable">编辑</button>
       </div>
     </div>
 
@@ -114,29 +113,35 @@
         <div class="dialog-body">
           <div class="form-section">
             <div class="form-row">
+
+              <div class="form-item">
+                <label>工序名称 <span class="required-field">*</span></label>
+                <input type="text" class="input-field" placeholder="请输入工序名称" v-model="formData.processname"/>
+              </div>
               <div class="form-item">
                 <label>订单单号</label>
                 <input type="text" class="input-field" placeholder="请输入订单单号" v-model="formData.sorder" @blur="handleOrderQuery" />
               </div>
               <div class="form-item">
                 <label>产品名称</label>
-                <input type="text" class="input-field" placeholder="请输入产品名称" v-model="formData.productdesc" />
+                <input type="text" class="input-field" placeholder="" v-model="formData.productdesc"readonly/>
               </div>
+              
               <div class="form-item">
-                <label>工序名称</label>
-                <input type="text" class="input-field" placeholder="请输入工序名称" v-model="formData.processname" />
-              </div>
-              <div class="form-item">
-                <label>作业员</label>
+                <label>作业员 <span class="required-field">*</span></label>
                 <input type="text" class="input-field" placeholder="请输入作业员" v-model="formData.productop" />
               </div>
               <div class="form-item">
                 <label>订单数</label>
-                <input type="text" class="input-field" placeholder="请输入订单数" v-model="formData.dataone" />
+                <input type="text" class="input-field" placeholder="" v-model="formData.dataone" readonly/>
+              </div>
+              <div class="form-item">
+                <label>已报工数量</label>
+                <input type="text" class="input-field" placeholder="" v-model="formData.baogong" @blur="validateOutputData" readonly/>
               </div>
 
               <div class="form-item">
-                <label>产出数</label>
+                <label>产出数 <span class="required-field">*</span></label>
                 <input type="text" class="input-field" placeholder="请输入产出数" v-model="formData.datatwo" @blur="validateOutputData" />
               </div>
 
@@ -163,7 +168,7 @@
                 <input type="datetime-local" class="input-field" v-model="formData.offduty"/>
               </div>
 
-              <div class="form-item" v-show="ok">
+              <div class="form-item" >
                 <label>Card</label>
                 <!-- 添加了readonly属性，使其变为只读状态 -->
                 <input type="text" class="input-field" placeholder="请输入" v-model="formData.card" readonly />
@@ -196,6 +201,9 @@ const showDialog = ref(false);
 const isEditing = ref(false);
 const currentEditIndex = ref(-1);
 
+// 产品信息编辑状态
+const isEditable = ref(true);
+
 // 产品信息响应式数据
 const productInfo = reactive({
   workshop: '',
@@ -203,6 +211,12 @@ const productInfo = reactive({
   reportDate: '',
   preparer: ''
 });
+
+// 处理编辑产品信息按钮点击事件
+const handleEditProductInfo = () => {
+  isEditable.value = true;
+};
+
 
 // 监听workshop变化，保存到localStorage
 watch(() => productInfo.workshop, (newValue) => {
@@ -212,9 +226,26 @@ watch(() => productInfo.workshop, (newValue) => {
 });
 
 // 表头信息确认
-const handleProductInfoConfirm = () => {
+const handleProductInfoConfirm = (event) => {
+  // 阻止事件冒泡
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  // 设置为不可编辑状态
+  isEditable.value = false;
+  
+  // 如果正在提交中，则直接返回
+  if (isSubmitting.value) {
+    console.log('正在提交中，请勿重复点击');
+    return;
+  }
+  
+  // 设置提交标志
+  isSubmitting.value = true;
+  
   console.log('产品信息已确认：', productInfo);
-  // 这里可以添加其他处理逻辑
   
   // 构建产品信息数据
   const productInfoData = {
@@ -228,13 +259,16 @@ const handleProductInfoConfirm = () => {
   submitWorkOrder(productInfoData)
     .then(response => {
       console.log('产品信息提交成功：', response);
-      // 可以添加成功提示
+      alert('保存成功');
     })
     .catch(error => {
       console.error('产品信息提交失败：', error);
-      // 可以添加错误处理
+      alert('保存失败：' + error.message);
+    })
+    .finally(() => {
+      // 无论成功还是失败，都重置提交标志
+      isSubmitting.value = false;
     });
-    alert('保存成功')
 };
 //构建产品信息数据源
 
@@ -297,48 +331,31 @@ const handleOrderQuery = async () => {
   }
   
   try {
-    // 调用订单查询API
-    const response = await queryOrder(formData.sorder);
+    // 调用订单查询API，传入productInfo.workshop和formData.processname参数
+    const response = await queryOrder(formData.sorder, productInfo.workshop, formData.processname);
     console.log('订单查询结果：', response);
+    console.log('response.data结构：', JSON.stringify(response.data, null, 2));
+    console.log('Aleadybaogong值：', response.data?.data?.Aleadybaogong);
     
     // 如果查询成功，自动填充相关字段
     //response.Code里面code要大写
     if (response && response.Code === 200 && response.data) {
+      // 检查Card字段是否存在
+      if (!response.data.Card) {
+        alert('订单未绑定');
+        // 清空表单数据
+        Object.keys(formData).forEach(key => {
+          formData[key] = '';
+        });
+      }
       // 根据API返回的数据结构填充表单
       formData.productdesc = response.data.Productdesc3 || '';
-      formData.processname = response.data.Area3 || '';
       formData.dataone = response.data.Ordercount || '';
       formData.card = response.data.Card || '';
-      
-      // 数据校验：检查已报工数据与产出数的关系
-      if (response.data.Aleadybanding) {
-        // 对订单数进行余量处理：乘以1.5%再加30
-        const orderCount = parseFloat(formData.dataone) || 0;
-        const marginOrderCount = orderCount * 1.015 + 30;
-        
-        // 获取已报工数据
-        const reportedCount = parseFloat(response.data.Aleadybanding) || 0;
-        
-        // 如果已报工数据大于产出数，提示用户
-        if (reportedCount > parseFloat(formData.datatwo || 0)) {
-          alert('警告：已报工数据大于产出数，请检查数据！');
-          console.warn('数据异常：已报工数据大于产出数', {
-            已报工数据: reportedCount,
-            产出数: formData.datatwo,
-            订单数: orderCount,
-            订单数余量处理后: marginOrderCount
-          });
-        }
-        
-        // 如果已报工数据大于订单数余量处理后的值，也提示用户
-        if (reportedCount > marginOrderCount) {
-          alert('警告：已报工数据超过订单数余量上限，请检查数据！');
-          console.warn('数据异常：已报工数据超过订单数余量上限', {
-            已报工数据: reportedCount,
-            订单数: orderCount,
-            订单数余量处理后: marginOrderCount
-          });
-        }
+      formData.baogong = response.data.Aleadybaogong || '';
+      // 确保Aleadybaogong值有效
+      if (response.data.data) {
+        console.log('获取到的Aleadybaogong值:', response.data.data.Aleadybaogong);
       }
     } else {
       console.warn('订单查询未返回有效数据');
@@ -350,65 +367,20 @@ const handleOrderQuery = async () => {
   }
 };
 
-// 验证产出数据
-const validateOutputData = async () => {
-  if (!formData.dataone || !formData.datatwo) {
-    return;
-  }
-  
-  try {
-    // 解析订单数和产出数
-    const orderCount = parseFloat(formData.dataone) || 0;
-    const outputCount = parseFloat(formData.datatwo) || 0;
-    
-    // 对订单数进行余量处理：乘以1.5%再加30
-    const marginOrderCount = orderCount * 1.015 + 30;
-    
-    // 如果产出数大于订单数余量处理后的值，提示用户
-    if (outputCount > marginOrderCount) {
-      alert(`警告：产出数(${outputCount})超过订单数余量上限(${marginOrderCount.toFixed(2)})，请检查数据！`);
-      console.warn('数据异常：产出数超过订单数余量上限', {
-        产出数: outputCount,
-        订单数: orderCount,
-        订单数余量处理后: marginOrderCount
-      });
-    }
-    
-    // 如果有订单查询结果，检查已报工数据
-    if (formData.sorder) {
-      const response = await queryOrder(formData.sorder);
-      if (response && response.Code === 200 && response.data && response.data.Aleadybanding) {
-        const reportedCount = parseFloat(response.data.Aleadybanding) || 0;
-        
-        // 如果已报工数据大于产出数，提示用户
-        if (reportedCount > outputCount) {
-          alert(`警告：已报工数据(${reportedCount})大于产出数(${outputCount})，请检查数据！`);
-          console.warn('数据异常：已报工数据大于产出数', {
-            已报工数据: reportedCount,
-            产出数: outputCount
-          });
-        }
-      }
-    }
-  } catch (error) {
-    console.error('产出数据验证失败：', error);
-  }
-};
 
 
-
-// 将表单数据转换为JSON格式
+//将表单数据转换为JSON格式
 const convertFormToJson = () => {
   //JSON.stringify(json)功能: 将一个 json 对象转换成为 json 字符串
   return JSON.stringify({
-    area: "二部/包装车间",
+    area: productInfo.workshop,
     workingshift: productInfo.shift,
     shijian: productInfo.reportDate,
     reportname: productInfo.preparer,
     productdata: [
       {
         "0": {
-          line: "包装_二部",
+          line: formData.processname,
           productop: formData.productop,
           sorder: formData.sorder,
           productname: formData.productdesc,
@@ -430,8 +402,36 @@ const convertFormToJson = () => {
 };
 
 
-// 处理保存草稿按钮点击事件
-const handleSaveDraft = () => {
+// 防止重复提交的标志
+const isSubmitting = ref(false);
+
+// 处理保存报表按钮点击事件 - 将所有数据一次性发送到后端
+const handleSaveDraft = (event) => {
+  // 阻止事件冒泡
+  event.preventDefault();
+  event.stopPropagation();
+  
+  // 如果正在提交中，则直接返回
+  if (isSubmitting.value) {
+    console.log('正在提交中，请勿重复点击');
+    return;
+  }
+  
+  // 检查是否有工序数据
+  if (processdetail.length === 0) {
+    alert('请先添加工序记录');
+    return;
+  }
+  
+  // 检查产品信息是否完整
+  if (!productInfo.workshop || !productInfo.shift || !productInfo.reportDate || !productInfo.preparer) {
+    alert('请先完善产品信息');
+    return;
+  }
+  
+  // 设置提交标志
+  isSubmitting.value = true;
+  
   // 构建完整的表单数据，包括产品信息和工序明细
   const draftData = {
     area: productInfo.workshop,
@@ -446,7 +446,7 @@ const handleSaveDraft = () => {
 
       return {
         [index]: {
-          line: productInfo.workshop,
+          line: item.processname,
           productop: item.productop,
           sorder: sorder,
           productname: productname,
@@ -466,70 +466,62 @@ const handleSaveDraft = () => {
     })
   };
 
-  // 发送草稿数据到后端API
+  // 发送所有数据到后端API
   submitWorkOrder(draftData)
     .then(response => {
-      console.log('草稿保存成功：', response);
-      // 可以添加成功提示
+      console.log('报表数据提交成功：', response);
+      alert('保存成功');
+      // 提交成功后清空工序明细，准备下一批数据录入
+      processdetail.length = 0;
     })
     .catch(error => {
-      console.error('草稿保存失败：', error);
-      // 可以添加错误处理
+      console.error('报表数据提交失败：', error);
+      alert('保存失败：' + error.message);
+    })
+    .finally(() => {
+      // 无论成功还是失败，都重置提交标志
+      isSubmitting.value = false;
     });
 
-    alert('保存成功');
 };
 
-
-const handleConfirm = () => {
-  // 数据校验：检查产出数与订单数的关系
-  const orderCount = parseFloat(formData.dataone) || 0;
-  const outputCount = parseFloat(formData.datatwo) || 0;
-  
-  // 对订单数进行余量处理：乘以1.5%再加30
-  const marginOrderCount = orderCount * 1.015 + 30;
-  
-  // 如果产出数大于订单数余量处理后的值，提示用户
-  if (outputCount > marginOrderCount) {
-    const confirmSubmit = confirm('警告：产出数超过订单数余量上限，是否继续提交？');
-    if (!confirmSubmit) {
-      return; // 用户取消提交
-    }
+// 添加工序确认订单号 - 只保存到本地，不发送到后端
+const handleConfirm = (event) => {
+  // 阻止事件冒泡
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
   }
+  
+  // 如果正在提交中，则直接返回
+  if (isSubmitting.value) {
+    console.log('正在提交中，请勿重复点击');
+    return;
+  }
+  
+  // 验证必填字段
+  if (!formData.processname) {
+    alert('请输入工序名称');
+    return;
+  }
+  
+  if (!formData.productop) {
+    alert('请输入作业员');
+    return;
+  }
+  
+  if (!formData.datatwo) {
+    alert('请输入产出数');
+    return;
+  }
+  
+  // 设置提交标志
+  isSubmitting.value = true;
   
   // 拆分订单号
   const orderParts = formData.sorder.split('#');
   const sorder = orderParts[1] || ''; // 获取第二部分作为订单号
   const productname = orderParts[2] || ''; // 获取第三部分作为产品编号
-
-  // 获取JSON格式的表单数据
-  const formDataJson = JSON.stringify({
-    area: "二部/包装车间",
-    workingshift: productInfo.shift,
-    shijian: productInfo.reportDate,
-    reportname: productInfo.preparer,
-    productdata: [
-      {
-        "0": {
-          line: "包装_二部",
-          productop: formData.productop,
-          sorder: sorder,
-          productname: productname,
-          productdesc: formData.productdesc,
-          orderqty: formData.dataone,
-          okqty: formData.datatwo,
-          ngqty: "0",
-          bfqty: "0",
-          costtime: formData.inputtime,
-          piecetime: formData.recordingtime,
-          perhourtime: formData.hourlyhours,
-          starworktime: formData.gowork,
-          endworktime: formData.offduty,
-          card: formData.card
-        }
-      }
-    ]
-  }, null, 2);
 
   if (isEditing.value && currentEditIndex.value >= 0) {
     // 更新现有工序数据
@@ -546,7 +538,7 @@ const handleConfirm = () => {
       hourlyhours: formData.hourlyhours,
       gowork: formData.gowork,
       offduty: formData.offduty,
-      card: formData.card
+      card:formData.card
     };
   } else {
     // 创建新的工序数据对象
@@ -563,27 +555,19 @@ const handleConfirm = () => {
       hourlyhours: formData.hourlyhours,
       gowork: formData.gowork,
       offduty: formData.offduty,
-      card: formData.card
+      card:formData.card
     };
 
     // 添加到工序明细数组
     processdetail.push(newProcess);
   }
 
-  // 发送数据到后端API
-  const jsonData = JSON.parse(formDataJson);
-  submitWorkOrder(jsonData)
-    .then(response => {
-      console.log('报工数据提交成功：', response);
-      // 可以添加成功提示或其他逻辑
-    })
-    .catch(error => {
-      console.error('报工数据提交失败：', error);
-      // 可以添加错误处理逻辑
-    });
-
+  // 重置提交标志
+  isSubmitting.value = false;
   // 关闭弹窗并重置表单
   handleCloseDialog();
+  // 提示用户本地保存成功，需要点击保存报表按钮才会提交到后端
+  
 };
 
 //工序明细
@@ -601,12 +585,50 @@ const processdetail = reactive([])
 const handleDelete = (index) => {
   processdetail.splice(index, 1);
 };
+
+
+
+
+// 添加数据校验函数
+const validateOutputData = () => {
+  if (!formData.dataone || !formData.datatwo) return;
+  
+  // 将字符串转换为数字
+  const orderCount = parseFloat(formData.dataone);
+  const outputCount = parseFloat(formData.datatwo);
+  
+  // 获取已报工数据
+  queryOrder(formData.sorder).then(response => {
+    if (response && response.Code === 200 && response.data) {
+      // 获取已报工数量
+      // const reportedCount = parseFloat(response.data.Aleadybaogong);
+      
+      // 计算订单数的余量上限 (订单数 * 1.015 + 30)
+      const maxAllowedCount = orderCount * 1.015 + 30;
+      
+      // 计算剩余可报工数量
+      const remainingCount = maxAllowedCount - formData.baogong;
+      
+      // 验证产出数是否超过剩余可报工数量
+      if (outputCount > remainingCount) {
+        
+        alert(`产出数超过限制！\n订单数: ${orderCount}\n已报工数: ${formData.baogong}\n余量上限: ${maxAllowedCount.toFixed(2)}\n剩余可报工数量: ${remainingCount.toFixed(2)}`);
+        formData.datatwo = '';
+      }
+    }
+  }).catch(error => {
+    
+    console.error('验证产出数时发生错误:', error);
+  });
+};
 </script>
 
 <style scoped>
 .work-order-management {
   padding: 20px;
   background-color: #f5f5f5;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .navigation {
@@ -642,14 +664,16 @@ const handleDelete = (index) => {
   display: flex;
   gap: 20px;
   margin-bottom: 15px;
+  flex-wrap: wrap;
 }
 
 .info-item {
   flex: 1;
+  min-width: 250px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin:10px;
+  margin: 10px;
 }
 
 .info-item label {
@@ -795,9 +819,24 @@ const handleDelete = (index) => {
   background-color: #bae7ff;
 }
 
-.edit-btn {
-  background-color: #f6ffed;
-  color: #52c41a;
+.btn-edit {
+  
+  background-color: #52c41a;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-edit:hover {
+  background-color: #93ec45;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-edit:active {
+  background-color: #b7eb8f;
+  transform: translateY(1px);
 }
 
 .edit-btn:hover {
@@ -855,10 +894,11 @@ const handleDelete = (index) => {
 .dialog-content {
   background-color: white;
   border-radius: 8px;
-  width: 80%;
+  width: 90%;
   max-width: 1200px;
   max-height: 90vh;
   overflow-y: auto;
+  margin: 20px;
 }
 
 .dialog-header {
@@ -887,7 +927,7 @@ const handleDelete = (index) => {
 
 .form-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 24px;
   margin-bottom: 16px;
 }
@@ -951,5 +991,58 @@ const handleDelete = (index) => {
 
 .btn-confirm:hover {
   background-color: #40a9ff;
+}
+
+.required-field {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+/* 响应式设计的媒体查询 */
+@media screen and (max-width: 768px) {
+  .work-order-management {
+    padding: 10px;
+  }
+
+  .info-item {
+    min-width: 100%;
+    margin: 5px 0;
+  }
+
+  .process-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .process-table th,
+  .process-table td {
+    padding: 8px 4px;
+    font-size: 14px;
+  }
+
+  .operation-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .operation-btn {
+    width: 100%;
+    margin: 2px 0;
+  }
+
+  .dialog-content {
+    width: 95%;
+    margin: 10px;
+  }
+
+  .bottom-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .btn-save,
+  .btn-cancel {
+    width: 100%;
+  }
 }
 </style>

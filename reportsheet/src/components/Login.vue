@@ -1,6 +1,12 @@
 <template>
   <div class="login-container">
+    
     <div class="login-box">
+<!-- //齿轮标签 -->
+      <div class="settings-icon" @click="goToIPConfig">
+      <i class="gear-icon"><img src="@/assets/gear.png" alt="" style="width: 30px; height: 30px;"></i>
+    </div>
+
       <h2 class="login-title">系统登录</h2>
       <div class="login-form">
         <div class="form-item">
@@ -32,6 +38,11 @@ const loginForm = reactive({
   password: '',
   verifyCode: '123456' // 默认验证码
 });
+
+// 跳转到IP配置页面
+const goToIPConfig = () => {
+  router.push('/ip-config');
+};
 
 // 登录处理函数
 const handleLogin = async () => {
@@ -76,6 +87,8 @@ const handleLogin = async () => {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  /* 固定齿轮在右上角 */
+  position: relative;
 }
 
 .login-title {
@@ -134,5 +147,24 @@ const handleLogin = async () => {
 
 .login-btn:hover {
   background-color: #40a9ff;
+}
+
+.settings-icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+  color: #d9d9d9;
+  z-index: 180;
+}
+
+.gear-icon {
+  /* font-size: 24px; */
+  color: #1890ff;
+  transition: transform 0.3s ease;
+}
+
+.gear-icon:hover {
+  transform: rotate(90deg);
 }
 </style>

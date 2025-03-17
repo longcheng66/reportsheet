@@ -1,23 +1,26 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import WorkOrderManagement from '../components/WorkOrderManagement.vue'
 import Login from '../components/Login.vue'
+import IPConfig from '../components/IPConfig.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      
       path: '/',
       name: 'login',
       component: Login,
-      
     },
     {
       path: '/home',
       name: 'home',
-      
       component: WorkOrderManagement,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/ip-config',
+      name: 'ipConfig',
+      component: IPConfig
     }
   ]
 })
