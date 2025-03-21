@@ -344,11 +344,30 @@ const handleOrderQuery = async () => {
       if (!response.data.Card) {
         alert('订单未绑定');
         // 清空表单数据
-        Object.keys(formData).forEach(key => {
-          formData[key] = '';
-        });
-      }
-      // 根据API返回的数据结构填充表单
+        // Object.keys(formData).forEach(key => {
+        //   formData[key] = '';
+        // });
+      
+  formData.sorder = '';
+  formData.productdesc = '';
+  formData.processname = '';
+  formData.productop = '';
+  formData.dataone = '';
+  formData.datatwo = '';
+  formData.inputtime = '';
+  formData.recordingtime = '';
+  formData.hourlyhours = '';
+  formData.gowork = '';
+  formData.offduty = '';
+  formData.startDate = '';
+  formData.endDate = '';
+  formData.card = '';
+  formData.baogong = '';
+
+
+//修改记录：将card未绑定与API返回数据分离
+      }else{
+ // 根据API返回的数据结构填充表单
       formData.productdesc = response.data.Productdesc3 || '';
       formData.dataone = response.data.Ordercount || '';
       formData.card = response.data.Card || '';
@@ -357,11 +376,16 @@ const handleOrderQuery = async () => {
       if (response.data.data) {
         console.log('获取到的Aleadybaogong值:', response.data.data.Aleadybaogong);
       }
+
+      }
+     
     } else {
+      alert("数据不匹配,订单查询未返回有效数据")
       console.warn('订单查询未返回有效数据');
       console.log(response);
     }
   } catch (error) {
+    alert('订单查询失败');
     console.error('订单查询失败：', error);
     // 可以添加错误提示
   }

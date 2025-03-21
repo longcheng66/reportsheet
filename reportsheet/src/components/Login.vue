@@ -21,6 +21,7 @@
           <button class="login-btn" @click="handleLogin">登录</button>
         </div>
       </div>
+      <div class="version">版本:1.8.1</div>
     </div>
   </div>
 </template>
@@ -166,5 +167,10 @@ const handleLogin = async () => {
 
 .gear-icon:hover {
   transform: rotate(90deg);
+}
+
+.version{
+  margin-top: 20px;
+  text-align: center; 
 }
 </style>
